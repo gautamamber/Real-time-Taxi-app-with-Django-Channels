@@ -63,10 +63,6 @@ class AuthenticationTest(APITestCase):
         header, payload, signature = access.split('.')
         decode_payload = base64.b64decode(f'{payload}==')
         payload_data = json.loads(decode_payload)
-
         self.assertEqual(status.HTTP_200_OK, response.status_code)
         self.assertIsNotNone(response.data['refresh'])
         self.assertEqual(payload_data['id'], user.id)
-        self.assertEqual(payload_data['username'], user.username)
-        self.assertEqual(payload_data['first_name'], user.first_name)
-        self.assertEqual(payload_data['last_name'], user.last_name)

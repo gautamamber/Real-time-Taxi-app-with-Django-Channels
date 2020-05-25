@@ -1,5 +1,6 @@
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -38,3 +39,19 @@ class UserSerializer(serializers.ModelSerializer):
         }
         data['password'] = validated_data['password1']
         return self.Meta.model.objects.create_user(**data)
+
+
+class LoginSerializer(TokenObtainPairSerializer):
+    """
+    Login serializer
+     LogInSerializer that serializes the User object and adds the data to the token payload as private claims.
+     (We avoid overwriting the id claim, since the token already includes it by
+    """
+    @classmethod
+    def get_token(cls, user):
+        token = super().get_token(user)
+        user_data = UserSerializer(user).data
+        for key, value in user_data.items():
+            if key != 'id':
+                token['key'] = value
+        return token
