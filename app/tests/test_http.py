@@ -4,6 +4,7 @@ from django.contrib.auth import get_user_model
 from rest_framework import status
 from rest_framework.reverse import reverse
 from rest_framework.test import APITestCase
+from app import models
 
 # Dummy password
 PASSWORD = "password@12345"
@@ -66,3 +67,39 @@ class AuthenticationTest(APITestCase):
         self.assertEqual(status.HTTP_200_OK, response.status_code)
         self.assertIsNotNone(response.data['refresh'])
         self.assertEqual(payload_data['id'], user.id)
+
+
+class TripTest(APITestCase):
+    """
+    Test case for Trips
+    """
+
+    def setUp(self):
+        """
+        Setup the database
+        :return:
+        """
+        user = create_user()
+        response = self.client.post(reverse('login'), data={
+            "username": user.username,
+            "password": PASSWORD
+        })
+        self.access = response.data['access']
+
+    def test_user_can_list_trips(self):
+        """
+        User can see his all trips
+        :param self:
+        :return:
+        """
+        trips = [
+            models.Trip.objects.create(pick_up_address='A', drop_off_address='B'),
+            models.Trip.objects.create(pick_up_address='B', drop_off_address='C')
+        ]
+        response = self.client.get(reverse('trip_list'),
+                                   HTTP_AUTHORIZATION=f'Bearer {self.access}')
+        print(response)
+        self.assertEqual(status.HTTP_200_OK, response.status_code)
+        exp_trip = [str(trip.id) for trip in trips]
+        act_trip = [trip.get('id') for trip in response.data]
+        self.assertCountEqual(exp_trip, act_trip)
