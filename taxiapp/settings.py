@@ -46,10 +46,11 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'channels',
     'rest_framework',
     'app'
 ]
-
+AUTH_USER_MODEL = 'app.User'
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -88,6 +89,7 @@ DATABASES = {
     'default': env.db(),  # Looks for DATABASE_URL in environment file,
 }
 
+ASGI_APPLICATION = 'taxiapp.routing.application'
 
 # Password validation
 # https://docs.djangoproject.com/en/3.0/ref/settings/#auth-password-validators
@@ -107,7 +109,18 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+# Configure the CHANNEL_LAYERS by settings a default Redis and routing
 
+REDIS_URL = os.getenv('REDIS_URL', 'redis://localhost:6379')
+
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            'hosts': [REDIS_URL],
+        },
+    },
+}
 # Internationalization
 # https://docs.djangoproject.com/en/3.0/topics/i18n/
 
