@@ -1,5 +1,6 @@
 from channels.generic.websocket import AsyncWebsocketConsumer
 from .models import Trip
+from .serializers import NestedTripSerializer, TripSerializer
 from channels.db import database_sync_to_async
 
 
@@ -95,9 +96,21 @@ class TaxiConsumer(AsyncWebsocketConsumer):
         :param kwargs:
         :return:
         """
-        message_type = content.get("type")
-        if message_type == "echo.message":
-            await self.send_json({
-                "type": message_type,
-                "data": content.get("data")
-            })
+        message_type = content.get('type')
+        if message_type == 'create.trip':
+            await self.create_trip(content)
+        elif message_type == 'echo.message':
+            await self.echo_message(content)
+
+    async def create_trip(self, message):
+        data = message.get('data')
+        trip = await _create_trip(data)
+        await self.send_json({
+            'type': 'echo.message',
+            'data': NestedTripSerializer(trip).data,
+        })
+
+
+@database_sync_to_async
+def _create_trip(self, data):
+    serializer = TripSerializer(data=data)
