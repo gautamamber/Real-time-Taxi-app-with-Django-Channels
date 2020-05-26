@@ -1,4 +1,25 @@
 from channels.generic.websocket import AsyncWebsocketConsumer
+from .models import Trip
+from channels.db import database_sync_to_async
+
+
+@database_sync_to_async
+def _get_user_group(self, user):
+    return user.groups.first().name
+
+
+@database_sync_to_async
+def _get_trip_ids(self, user):
+    user_groups = user.groups.values_list('name', flat=True)
+    if 'driver' in user_groups:
+        trip_ids = user.trips_as_driver.exclude(
+            status=Trip.COMPLETED
+        ).only('id').values_list('id', flat=True)
+    else:
+        trip_ids = user.trips_as_rider.exclude(
+            status=Trip.COMPLETED
+        ).only('id').values_list('id', flat=True)
+    return map(str, trip_ids)
 
 
 class TaxiConsumer(AsyncWebsocketConsumer):
@@ -18,10 +39,20 @@ class TaxiConsumer(AsyncWebsocketConsumer):
         if user.is_anonymous:
             await self.close()
         else:
-            await self.channel_layer.group_add(
-                group='test',
-                channel=self.channel_name
-            )
+            """
+            Add user in driver group
+            """
+            user_group = await _get_user_group(user)
+            if user_group == 'driver':
+                await self.channel_layer.group_add(
+                    group="drivers",
+                    channel=self.channel_name
+                )
+            for trip_id in await _get_trip_ids(user):
+                await self.channel_layer.group_add(
+                    group=trip_id,
+                    channel=self.channel_name
+                )
             await self.accept()
 
     async def echo_message(self, message):
@@ -36,10 +67,21 @@ class TaxiConsumer(AsyncWebsocketConsumer):
         :param code:
         :return:
         """
-        await self.channel_layer.group_discard(
-            group='test',
-            channel=self.channel_name
-        )
+        user = self.scope['user']
+        user_group = await _get_user_group(user)
+        if user_group == 'driver':
+            await self.channel_layer.group_discard(
+                group='drivers',
+                channel=self.channel_name
+            )
+
+        # new
+        for trip_id in await _get_trip_ids(user):
+            await self.channel_layer.group_discard(
+                group=trip_id,
+                channel=self.channel_name
+            )
+
         await super().disconnect(code)
 
     async def receive_json(self, content, **kwargs):

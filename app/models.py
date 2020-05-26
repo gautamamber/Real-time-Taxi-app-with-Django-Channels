@@ -1,6 +1,7 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 import uuid
+from taxiapp import settings
 from django.shortcuts import reverse
 
 
@@ -31,6 +32,10 @@ class Trip(models.Model):
     updated = models.DateTimeField(auto_now=True)
     pick_up_address = models.CharField(max_length=255)
     drop_off_address = models.CharField(max_length=255)
+    rider = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.DO_NOTHING,
+                              related_name="trips_as_rider")
+    driver = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.DO_NOTHING,
+                               related_name="trips_as_driver")
     status = models.CharField(
         max_length=100, choices=STATUSES, default=REQUESTED
     )
