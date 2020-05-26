@@ -118,3 +118,49 @@ class TestWebSocket:
         assert response_data['rider']['username'] == user.username
         assert response_data['driver'] is None
         await communicator.disconnect()
+
+    async def test_driver_alert_on_request(self, settings):
+        """
+        A ride request should be broadcast to all drivers in the driver pool the moment it is sent. Let’s create a
+        test to capture that behavior.
+        We start off by creating a channel layer and adding it to the driver pool. Every message that is broadcast to
+        the drivers group will be captured on the test_channel . Next, we establish a connection to the server as a
+        rider, and we send a new request message over the wire. Finally, we wait for the broadcast message to reach the
+        drivers group, and we confirm the identity of the rider who sent it.
+        :param settings:
+        :return:
+        """
+        settings.CHANNEL_LAYERS = TEST_CHANNEL_LAYERS
+        channel_layer = get_channel_layer()
+        await channel_layer.group_add(
+            group="drivers",
+            channel="test_channel"
+        )
+
+        user, access = await create_user(
+            "test.user@example.com", "password", "rider"
+        )
+        communicator = WebsocketCommunicator(
+            application=application,
+            path=f'/taxi/?token={access}'
+        )
+        connected, _ = await communicator.connect()
+
+        # Request a trip
+
+        await communicator.send_json_to({
+            'type': 'create.trip',
+            'data': {
+                'pick_up_address': '123 Main Street',
+                'drop_off_address': '456 Piney Road',
+                'rider': user.id,
+            },
+        })
+        # Receive JSON message from server on test channel.
+        response = await channel_layer.receive('test_channel')
+        response_data = response.get("data")
+        assert response_data['id'] is not None
+        assert response_data['rider']['username'] == user.username
+        assert response_data['driver'] is None
+
+        await communicator.disconnect()
