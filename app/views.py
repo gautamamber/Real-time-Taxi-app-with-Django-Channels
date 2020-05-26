@@ -26,3 +26,14 @@ class TripApiView(generics.ListAPIView):
     permission_classes = (permissions.IsAuthenticated,)
     queryset = models.Trip.objects.all()
     serializer_class = serializers.TripSerializer
+
+
+class TripDetailApiView(generics.RetrieveAPIView):
+    """
+    Get trip details
+    """
+    lookup_field = 'id'
+    lookup_url_kwarg = 'trip_id'
+    permission_classes = (permissions.IsAuthenticated, )
+    queryset = models.Trip.objects.all()
+    serializer_class = serializers.TripSerializer

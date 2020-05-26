@@ -98,8 +98,19 @@ class TripTest(APITestCase):
         ]
         response = self.client.get(reverse('trip_list'),
                                    HTTP_AUTHORIZATION=f'Bearer {self.access}')
-        print(response)
         self.assertEqual(status.HTTP_200_OK, response.status_code)
         exp_trip = [str(trip.id) for trip in trips]
         act_trip = [trip.get('id') for trip in response.data]
         self.assertCountEqual(exp_trip, act_trip)
+
+    def test_user_can_retrieve_trip(self):
+        """
+        Get trip using uuid
+        :return:
+        """
+        trip = models.Trip.objects.create(pick_up_address='A', drop_off_address='B')
+        response = self.client.get(trip.get_absolute_url(),
+                                   HTTP_AUTHORIZATION=f'Bearer {self.access}'
+                                   )
+        self.assertEqual(status.HTTP_200_OK, response.status_code)
+        self.assertEqual(str(trip.id), response.data.get('id'))

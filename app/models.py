@@ -43,4 +43,4 @@ class Trip(models.Model):
         return "{}".format(self.id)
 
     def get_absolute_url(self):
-        return reverse('trip:trip_detail', kwargs={'trip_id': self.id})
+        return reverse('trip_detail', kwargs={'trip_id': self.id})
