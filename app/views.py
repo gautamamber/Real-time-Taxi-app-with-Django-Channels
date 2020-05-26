@@ -37,3 +37,13 @@ class TripDetailApiView(generics.RetrieveAPIView):
     permission_classes = (permissions.IsAuthenticated, )
     queryset = models.Trip.objects.all()
     serializer_class = serializers.TripSerializer
+
+
+"""
+users can participate in trips in one of two ways – they either drive the 
+cars or they ride in them. A rider initiates the trip with a request, which 
+is broadcast to all available drivers. A driver starts a trip by accepting the 
+request. At this point, the driver heads to the pick-up address. The rider is instantly 
+alerted that a driver has started the trip and other drivers are notified that the trip 
+is no longer up for grabs.
+"""
